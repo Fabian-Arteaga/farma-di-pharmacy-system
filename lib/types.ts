@@ -70,7 +70,7 @@ export type MetodoPago = {
 export type Producto = {
   productoId: number;
   nombreGenerico: string;
-  nombreComercial: string;
+  nombreComercial?: string;
   categoriaId: number;
   categoriaNombre?: string;
   presentacionId: number;

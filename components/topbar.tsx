@@ -47,19 +47,21 @@ export function Topbar() {
 
       <div className="ml-auto">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-2 h-9">
-              <Avatar className="size-7">
-                <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="hidden md:inline text-sm font-medium">
-                {user?.nombre} {user?.apellido}
-              </span>
-              <ChevronDown className="size-3 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 h-9">
+                <Avatar className="size-7">
+                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden md:inline text-sm font-medium">
+                  {user?.nombre} {user?.apellido}
+                </span>
+                <ChevronDown className="size-3 text-muted-foreground" />
+              </Button>
+            }
+          />
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col gap-0.5">
@@ -69,11 +71,9 @@ export function Topbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/perfil">
-                <User data-icon="inline-start" />
-                Mi Perfil
-              </Link>
+            <DropdownMenuItem render={<Link href="/perfil" />}>
+              <User data-icon="inline-start" />
+              Mi Perfil
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

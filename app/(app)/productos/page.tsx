@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CatalogTable, EstadoBadge, type Column } from "@/components/catalog-table";
@@ -73,10 +73,10 @@ export default function ProductosPage() {
     setOpen(false);
   }
 
-  const Select2 = ({ id, label, required, options, value, onChange, error }: { id: string; label: string; required?: boolean; options: { value: number; label: string }[]; value: number; onChange: (v: string) => void; error?: string }) => (
+  const Select2 = ({ id, label, required, options, value, onChange, error }: { id: string; label: string; required?: boolean; options: { value: number; label: string }[]; value: number; onChange: (v: string | null) => void; error?: string }) => (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label} {required && <span className="text-destructive">*</span>}</Label>
-      <Select value={value > 0 ? String(value) : ""} onValueChange={onChange}>
+              <Select value={value > 0 ? String(value) : ""} onValueChange={(v) => onChange(v)}>
         <SelectTrigger id={id} aria-invalid={!!error}><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
         <SelectContent>{options.map(o => <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>)}</SelectContent>
       </Select>
@@ -107,11 +107,11 @@ export default function ProductosPage() {
                 <Label>Nombre Comercial</Label>
                 <Input {...register("nombreComercial")} placeholder="Opcional" />
               </div>
-              <Select2 id="cat" label="Categoría" required options={categorias.filter(c => c.estadoActivo).map(c => ({ value: c.categoriaId, label: c.nombreCategoria }))} value={watch("categoriaId")} onChange={(v) => setValue("categoriaId", Number(v))} error={errors.categoriaId?.message} />
-              <Select2 id="pres" label="Presentación" required options={presentaciones.filter(p => p.estadoActivo).map(p => ({ value: p.presentacionId, label: p.nombrePresentacion }))} value={watch("presentacionId")} onChange={(v) => setValue("presentacionId", Number(v))} error={errors.presentacionId?.message} />
-              <Select2 id="conc" label="Concentración" required options={concentraciones.filter(c => c.estadoActivo).map(c => ({ value: c.concentracionId, label: `${c.valorConcentracion} ${c.unidadConcentracion}` }))} value={watch("concentracionId")} onChange={(v) => setValue("concentracionId", Number(v))} error={errors.concentracionId?.message} />
-              <Select2 id="prov" label="Proveedor" required options={proveedores.filter(p => p.estadoActivo).map(p => ({ value: p.proveedorId, label: p.nombreProveedor }))} value={watch("proveedorId")} onChange={(v) => setValue("proveedorId", Number(v))} error={errors.proveedorId?.message} />
-              <Select2 id="marc" label="Marca" required options={marcas.filter(m => m.estadoActivo).map(m => ({ value: m.marcaId, label: m.nombreMarca }))} value={watch("marcaId")} onChange={(v) => setValue("marcaId", Number(v))} error={errors.marcaId?.message} />
+              <Select2 id="cat" label="Categoría" required options={categorias.filter(c => c.estadoActivo).map(c => ({ value: c.categoriaId, label: c.nombreCategoria }))} value={watch("categoriaId")} onChange={(v) => setValue("categoriaId", Number(v ?? 0))} error={errors.categoriaId?.message} />
+              <Select2 id="pres" label="Presentación" required options={presentaciones.filter(p => p.estadoActivo).map(p => ({ value: p.presentacionId, label: p.nombrePresentacion }))} value={watch("presentacionId")} onChange={(v) => setValue("presentacionId", Number(v ?? 0))} error={errors.presentacionId?.message} />
+              <Select2 id="conc" label="Concentración" required options={concentraciones.filter(c => c.estadoActivo).map(c => ({ value: c.concentracionId, label: `${c.valorConcentracion} ${c.unidadConcentracion}` }))} value={watch("concentracionId")} onChange={(v) => setValue("concentracionId", Number(v ?? 0))} error={errors.concentracionId?.message} />
+              <Select2 id="prov" label="Proveedor" required options={proveedores.filter(p => p.estadoActivo).map(p => ({ value: p.proveedorId, label: p.nombreProveedor }))} value={watch("proveedorId")} onChange={(v) => setValue("proveedorId", Number(v ?? 0))} error={errors.proveedorId?.message} />
+              <Select2 id="marc" label="Marca" required options={marcas.filter(m => m.estadoActivo).map(m => ({ value: m.marcaId, label: m.nombreMarca }))} value={watch("marcaId")} onChange={(v) => setValue("marcaId", Number(v ?? 0))} error={errors.marcaId?.message} />
             </div>
             <div className="flex items-center gap-3"><Switch checked={watch("estadoActivo")} onCheckedChange={(v) => setValue("estadoActivo", v)} /><Label>Producto activo</Label></div>
             <DialogFooter className="mt-2">

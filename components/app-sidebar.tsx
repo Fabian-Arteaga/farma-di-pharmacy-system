@@ -7,7 +7,7 @@ import {
   BookOpen, Pill, LogOut, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
@@ -57,66 +57,54 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/dashboard")}>
-                <Link href="/dashboard">
-                  <LayoutDashboard />
-                  <span>Dashboard</span>
-                </Link>
+              <SidebarMenuButton isActive={isActive("/dashboard")} render={<Link href="/dashboard" />}>
+                <LayoutDashboard />
+                <span>Dashboard</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/ventas")}>
-                <Link href="/ventas">
-                  <Receipt />
-                  <span>Ventas</span>
-                </Link>
+              <SidebarMenuButton isActive={isActive("/ventas")} render={<Link href="/ventas" />}>
+                <Receipt />
+                <span>Ventas</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
             {isAdmin && (
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/compras")}>
-                  <Link href="/compras">
-                    <ShoppingCart />
-                    <span>Compras</span>
-                  </Link>
+                <SidebarMenuButton isActive={isActive("/compras")} render={<Link href="/compras" />}>
+                  <ShoppingCart />
+                  <span>Compras</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/productos")}>
-                <Link href="/productos">
-                  <Package />
-                  <span>Productos</span>
-                </Link>
+              <SidebarMenuButton isActive={isActive("/productos")} render={<Link href="/productos" />}>
+                <Package />
+                <span>Productos</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/inventario")}>
-                <Link href="/inventario">
-                  <div className="flex items-center gap-2 flex-1">
-                    <AlertTriangle className={cn("size-4", alertas > 0 && "text-warning")} />
-                    <span>Inventario</span>
-                  </div>
-                  {alertas > 0 && (
-                    <Badge variant="outline" className="ml-auto text-xs border-warning text-warning">
-                      {alertas}
-                    </Badge>
-                  )}
-                </Link>
+              <SidebarMenuButton isActive={isActive("/inventario")} render={<Link href="/inventario" />}>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <AlertTriangle className={cn("size-4 shrink-0", alertas > 0 && "text-yellow-400")} />
+                  <span>Inventario</span>
+                </div>
+                {alertas > 0 && (
+                  <Badge variant="outline" className="ml-auto text-xs border-yellow-400/50 text-yellow-400">
+                    {alertas}
+                  </Badge>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
 
             {isAdmin && (
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/reportes")}>
-                  <Link href="/reportes">
-                    <BarChart3 />
-                    <span>Reportes</span>
-                  </Link>
+                <SidebarMenuButton isActive={isActive("/reportes")} render={<Link href="/reportes" />}>
+                  <BarChart3 />
+                  <span>Reportes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
@@ -124,19 +112,24 @@ export function AppSidebar() {
             {visibleCatalogos.length > 0 && (
               <Collapsible defaultOpen={pathname.startsWith("/catalogos")}>
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isActive("/catalogos")}>
-                      <BookOpen />
-                      <span>Catálogos</span>
-                      <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                  <CollapsibleTrigger
+                    render={
+                      <SidebarMenuButton isActive={isActive("/catalogos")}>
+                        <BookOpen />
+                        <span>Catálogos</span>
+                        <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    }
+                  />
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {visibleCatalogos.map((item) => (
                         <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton asChild isActive={pathname === item.href}>
-                            <Link href={item.href}>{item.label}</Link>
+                          <SidebarMenuSubButton
+                            isActive={pathname === item.href}
+                            render={<Link href={item.href} />}
+                          >
+                            {item.label}
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}

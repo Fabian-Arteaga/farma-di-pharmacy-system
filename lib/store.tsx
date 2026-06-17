@@ -46,7 +46,7 @@ type StoreContextType = {
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-function nextId<T extends { [key: string]: number }>(arr: T[], key: keyof T): number {
+function nextId<T>(arr: T[], key: keyof T): number {
   return arr.length > 0 ? Math.max(...arr.map((x) => x[key] as number)) + 1 : 1;
 }
 
