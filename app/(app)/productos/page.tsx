@@ -86,7 +86,10 @@ export default function ProductosPage() {
 
   return (
     <>
-      <div className="mb-5"><h2 className="text-xl font-bold">Productos</h2><p className="text-sm text-muted-foreground">Catálogo de medicamentos disponibles en la farmacia</p></div>
+      <div className="mb-5 flex flex-col gap-0.5">
+        <h2 className="text-xl font-bold text-foreground">Productos</h2>
+        <p className="text-sm text-muted-foreground">Catálogo de medicamentos disponibles en la farmacia</p>
+      </div>
       <CatalogTable
         title="Productos" addLabel="Agregar producto" data={productos} columns={columns} idKey="productoId"
         onAdd={openAdd} onEdit={openEdit} onDelete={isAdmin ? deleteProducto : undefined}

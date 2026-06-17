@@ -140,9 +140,9 @@ export default function ComprasPage() {
 
   return (
     <>
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">Compras</h2>
-        <p className="text-sm text-muted-foreground">Registro y consulta de compras a proveedores</p>
+      <div className="mb-5 flex flex-col gap-0.5">
+        <h2 className="text-xl font-bold text-foreground">Compras</h2>
+        <p className="text-sm text-muted-foreground">Registro y consulta de órdenes de compra a proveedores</p>
       </div>
 
       {/* Toolbar */}

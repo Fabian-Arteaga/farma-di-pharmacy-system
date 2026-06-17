@@ -4,15 +4,15 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Trash2, Receipt, Eye, Search, ShoppingBag, Minus } from "lucide-react";
+import { Plus, Trash2, Receipt, Eye, Search, ShoppingBag, Minus, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -21,6 +21,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth-context";
 import type { DetalleVenta, Factura } from "@/lib/types";
@@ -30,6 +31,8 @@ function formatC(n: number) {
 }
 
 type CarritoItem = DetalleVenta & { stockDisponible: number };
+
+const METODO_EFECTIVO_NOMBRE = "Efectivo";
 
 export default function VentasPage() {
   const { facturas, metodosPago, productos, inventario, addFactura } = useStore();
@@ -48,6 +51,7 @@ export default function VentasPage() {
   const [nombreCliente, setNombreCliente] = useState("");
   const [descuentoGlobal, setDescuentoGlobal] = useState(0);
   const [observaciones, setObservaciones] = useState("");
+  const [montoRecibido, setMontoRecibido] = useState<string>("");
 
   // Filtered history
   const filteredFacturas = useMemo(() =>
@@ -57,7 +61,8 @@ export default function VentasPage() {
           (f.nombreCliente ?? "").toLowerCase().includes(search.toLowerCase()) ||
           (f.metodoPagoNombre ?? "").toLowerCase().includes(search.toLowerCase())
         : true
-    ), [facturas, search]
+    ).sort((a, b) => new Date(b.fechaFactura).getTime() - new Date(a.fechaFactura).getTime()),
+    [facturas, search]
   );
 
   // Producto search for POS
@@ -66,7 +71,11 @@ export default function VentasPage() {
       .filter((p) => p.estadoActivo)
       .map((p) => {
         const stock = inventario.find((i) => i.productoId === p.productoId);
-        return { ...p, stock: stock?.cantidadDisponible ?? 0, precioVenta: stock?.precioVenta ?? 0 };
+        return {
+          ...p,
+          stock: stock?.cantidadDisponible ?? 0,
+          precioVenta: stock?.precioVenta ?? 0,
+        };
       })
       .filter((p) => p.stock > 0),
     [productos, inventario]
@@ -75,11 +84,26 @@ export default function VentasPage() {
   const productosFiltrados = useMemo(() =>
     productoSearch.trim()
       ? productosConStock.filter((p) =>
-          `${p.nombreGenerico} ${p.nombreComercial ?? ""} ${p.concentracionDescripcion ?? ""}`.toLowerCase().includes(productoSearch.toLowerCase())
+          `${p.nombreGenerico} ${p.nombreComercial ?? ""} ${p.concentracionDescripcion ?? ""}`
+            .toLowerCase()
+            .includes(productoSearch.toLowerCase())
         )
       : productosConStock.slice(0, 12),
     [productosConStock, productoSearch]
   );
+
+  // Totals
+  const subtotal = carrito.reduce((s, i) => s + i.subtotalLinea, 0);
+  const totalDescLineas = carrito.reduce((s, i) => s + i.descuentoLinea, 0);
+  const totalDesc = totalDescLineas + descuentoGlobal;
+  const total = Math.max(0, subtotal - totalDesc);
+
+  // Payment method helpers
+  const selectedMetodo = metodosPago.find((m) => m.metodoPagoId === metodoPagoId);
+  const esEfectivo = selectedMetodo?.nombreMetodoPago === METODO_EFECTIVO_NOMBRE;
+  const montoRecibidoNum = parseFloat(montoRecibido) || 0;
+  const cambio = esEfectivo ? Math.max(0, montoRecibidoNum - total) : 0;
+  const montoInsuficiente = esEfectivo && total > 0 && montoRecibidoNum < total;
 
   function agregarAlCarrito(productoId: number) {
     const prod = productosConStock.find((p) => p.productoId === productoId);
@@ -94,7 +118,12 @@ export default function VentasPage() {
         const qty = existing.cantidad + 1;
         return prev.map((i) =>
           i.productoId === productoId
-            ? { ...i, cantidad: qty, subtotalLinea: qty * i.precioUnitarioVenta, totalLinea: qty * i.precioUnitarioVenta - i.descuentoLinea }
+            ? {
+                ...i,
+                cantidad: qty,
+                subtotalLinea: qty * i.precioUnitarioVenta,
+                totalLinea: qty * i.precioUnitarioVenta - i.descuentoLinea,
+              }
             : i
         );
       }
@@ -119,7 +148,12 @@ export default function VentasPage() {
       prev.map((i) => {
         if (i.productoId !== productoId) return i;
         const newQty = Math.max(1, Math.min(i.stockDisponible, i.cantidad + delta));
-        return { ...i, cantidad: newQty, subtotalLinea: newQty * i.precioUnitarioVenta, totalLinea: newQty * i.precioUnitarioVenta - i.descuentoLinea };
+        return {
+          ...i,
+          cantidad: newQty,
+          subtotalLinea: newQty * i.precioUnitarioVenta,
+          totalLinea: newQty * i.precioUnitarioVenta - i.descuentoLinea,
+        };
       })
     );
   }
@@ -138,11 +172,6 @@ export default function VentasPage() {
     setCarrito((prev) => prev.filter((i) => i.productoId !== productoId));
   }
 
-  const subtotal = carrito.reduce((s, i) => s + i.subtotalLinea, 0);
-  const totalDescLineas = carrito.reduce((s, i) => s + i.descuentoLinea, 0);
-  const totalDesc = totalDescLineas + descuentoGlobal;
-  const total = Math.max(0, subtotal - totalDesc);
-
   function openNew() {
     setCarrito([]);
     setProductoSearch("");
@@ -150,12 +179,23 @@ export default function VentasPage() {
     setNombreCliente("");
     setDescuentoGlobal(0);
     setObservaciones("");
+    setMontoRecibido("");
     setNewOpen(true);
   }
 
   function confirmarVenta() {
-    if (carrito.length === 0) { toast.error("Agregue al menos un producto"); return; }
-    if (!metodoPagoId) { toast.error("Seleccione un método de pago"); return; }
+    if (carrito.length === 0) {
+      toast.error("Agregue al menos un producto al carrito");
+      return;
+    }
+    if (!metodoPagoId) {
+      toast.error("Seleccione un método de pago");
+      return;
+    }
+    if (esEfectivo && montoInsuficiente) {
+      toast.error("El monto recibido es menor al total a pagar");
+      return;
+    }
     const metodo = metodosPago.find((m) => m.metodoPagoId === metodoPagoId);
     addFactura({
       usuarioId: user!.usuarioId,
@@ -176,22 +216,28 @@ export default function VentasPage() {
 
   return (
     <>
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">Ventas</h2>
-        <p className="text-sm text-muted-foreground">Registro y consulta de ventas e historial de facturas</p>
+      {/* Page header */}
+      <div className="mb-5 flex flex-col gap-1">
+        <h2 className="text-xl font-bold text-foreground">Ventas</h2>
+        <p className="text-sm text-muted-foreground">
+          Registro y consulta de ventas e historial de facturas
+        </p>
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-        <Input
-          placeholder="Buscar por factura, cliente o método..."
-          className="max-w-xs"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Button onClick={openNew} size="sm">
-          <Plus data-icon="inline-start" />
-          Nueva venta
+        <div className="relative max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por factura, cliente o método..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Button onClick={openNew} size="sm" className="shrink-0">
+          <Plus className="size-4" />
+          Nueva Venta
         </Button>
       </div>
 
@@ -213,46 +259,50 @@ export default function VentasPage() {
             {filteredFacturas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
-                  No hay ventas registradas.
+                  {search ? "No se encontraron facturas con ese criterio." : "No hay ventas registradas."}
                 </TableCell>
               </TableRow>
             ) : (
-              [...filteredFacturas]
-                .sort((a, b) => new Date(b.fechaFactura).getTime() - new Date(a.fechaFactura).getTime())
-                .map((f) => (
-                  <TableRow key={f.facturaId} className="group">
-                    <TableCell className="font-medium text-sm">{f.numeroFactura}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(f.fechaFactura), "dd/MM/yyyy HH:mm", { locale: es })}
-                    </TableCell>
-                    <TableCell className="text-sm">{f.nombreCliente ?? <span className="text-muted-foreground">General</span>}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-xs">{f.metodoPagoNombre}</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{f.usuarioNombre}</TableCell>
-                    <TableCell className="text-right font-semibold text-sm">{formatC(f.totalFactura)}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost" size="icon" className="size-7 opacity-0 group-hover:opacity-100"
-                        onClick={() => { setViewFactura(f); setViewOpen(true); }}
-                      >
-                        <Eye className="size-3.5" />
-                        <span className="sr-only">Ver factura</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+              filteredFacturas.map((f) => (
+                <TableRow key={f.facturaId} className="group">
+                  <TableCell className="font-medium text-sm">{f.numeroFactura}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {format(new Date(f.fechaFactura), "dd/MM/yyyy HH:mm", { locale: es })}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {f.nombreCliente ?? <span className="text-muted-foreground">General</span>}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">{f.metodoPagoNombre}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{f.usuarioNombre}</TableCell>
+                  <TableCell className="text-right font-semibold text-sm">{formatC(f.totalFactura)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => { setViewFactura(f); setViewOpen(true); }}
+                    >
+                      <Eye className="size-3.5" />
+                      <span className="sr-only">Ver factura</span>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
         {filteredFacturas.length > 0 && (
           <div className="border-t px-4 py-2 text-xs text-muted-foreground bg-muted/20">
-            {filteredFacturas.length} {filteredFacturas.length === 1 ? "factura" : "facturas"}
+            {filteredFacturas.length}{" "}
+            {filteredFacturas.length === 1 ? "factura" : "facturas"}
+            {search && ` encontradas`}
           </div>
         )}
       </div>
 
-      {/* View factura */}
+      {/* View Factura dialog */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -261,11 +311,30 @@ export default function VentasPage() {
           {viewFactura && (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><p className="text-muted-foreground text-xs">Fecha</p><p className="font-medium">{format(new Date(viewFactura.fechaFactura), "dd/MM/yyyy HH:mm", { locale: es })}</p></div>
-                <div><p className="text-muted-foreground text-xs">Método de Pago</p><p className="font-medium">{viewFactura.metodoPagoNombre}</p></div>
-                <div><p className="text-muted-foreground text-xs">Cliente</p><p className="font-medium">{viewFactura.nombreCliente ?? "Cliente general"}</p></div>
-                <div><p className="text-muted-foreground text-xs">Cajero</p><p className="font-medium">{viewFactura.usuarioNombre}</p></div>
-                {viewFactura.observaciones && <div className="col-span-2"><p className="text-muted-foreground text-xs">Observaciones</p><p className="font-medium">{viewFactura.observaciones}</p></div>}
+                <div>
+                  <p className="text-muted-foreground text-xs">Fecha</p>
+                  <p className="font-medium">
+                    {format(new Date(viewFactura.fechaFactura), "dd/MM/yyyy HH:mm", { locale: es })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Método de Pago</p>
+                  <p className="font-medium">{viewFactura.metodoPagoNombre}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Cliente</p>
+                  <p className="font-medium">{viewFactura.nombreCliente ?? "Cliente general"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Cajero</p>
+                  <p className="font-medium">{viewFactura.usuarioNombre}</p>
+                </div>
+                {viewFactura.observaciones && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground text-xs">Observaciones</p>
+                    <p className="font-medium">{viewFactura.observaciones}</p>
+                  </div>
+                )}
               </div>
               <Separator />
               <Table>
@@ -274,7 +343,7 @@ export default function VentasPage() {
                     <TableHead>Producto</TableHead>
                     <TableHead className="text-right">Cant.</TableHead>
                     <TableHead className="text-right">P. Unitario</TableHead>
-                    <TableHead className="text-right">Desc.</TableHead>
+                    <TableHead className="text-right">Descuento</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -284,163 +353,301 @@ export default function VentasPage() {
                       <TableCell className="text-sm">{d.productoNombre}</TableCell>
                       <TableCell className="text-right text-sm">{d.cantidad}</TableCell>
                       <TableCell className="text-right text-sm">{formatC(d.precioUnitarioVenta)}</TableCell>
-                      <TableCell className="text-right text-sm">{d.descuentoLinea > 0 ? formatC(d.descuentoLinea) : "—"}</TableCell>
-                      <TableCell className="text-right text-sm font-medium">{formatC(d.totalLinea)}</TableCell>
+                      <TableCell className="text-right text-sm">
+                        {d.descuentoLinea > 0 ? formatC(d.descuentoLinea) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium">
+                        {formatC(d.totalLinea)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               <div className="flex flex-col items-end gap-1 text-sm">
-                <div className="flex gap-8"><span className="text-muted-foreground">Subtotal:</span><span>{formatC(viewFactura.subtotal)}</span></div>
-                {viewFactura.descuentoTotal > 0 && <div className="flex gap-8"><span className="text-muted-foreground">Descuento:</span><span className="text-destructive">-{formatC(viewFactura.descuentoTotal)}</span></div>}
+                <div className="flex gap-8">
+                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span>{formatC(viewFactura.subtotal)}</span>
+                </div>
+                {viewFactura.descuentoTotal > 0 && (
+                  <div className="flex gap-8">
+                    <span className="text-muted-foreground">Descuento:</span>
+                    <span className="text-destructive">-{formatC(viewFactura.descuentoTotal)}</span>
+                  </div>
+                )}
                 <Separator className="w-48 my-1" />
-                <div className="flex gap-8 font-bold text-base"><span>Total:</span><span>{formatC(viewFactura.totalFactura)}</span></div>
+                <div className="flex gap-8 font-bold text-base">
+                  <span>Total:</span>
+                  <span>{formatC(viewFactura.totalFactura)}</span>
+                </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* POS / Nueva Venta */}
+      {/* POS / Nueva Venta dialog */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
-        <DialogContent className="sm:max-w-5xl max-h-[95vh] overflow-y-auto p-0">
-          <div className="flex flex-col h-full">
-            <DialogHeader className="px-6 pt-5 pb-3 border-b">
-              <DialogTitle className="flex items-center gap-2">
-                <ShoppingBag className="size-5 text-primary" />
-                Nueva Venta
-              </DialogTitle>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-5xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
+          <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="size-5 text-primary" />
+              Nueva Venta
+            </DialogTitle>
+          </DialogHeader>
 
-            <div className="flex flex-1 gap-0 overflow-hidden">
-              {/* Left: product browser */}
-              <div className="flex-1 flex flex-col gap-3 p-4 border-r overflow-y-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <div className="flex flex-1 overflow-hidden min-h-0">
+            {/* Left: product browser */}
+            <div className="flex-1 flex flex-col gap-3 p-4 border-r overflow-y-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar producto por nombre o concentración..."
+                  className="pl-9"
+                  value={productoSearch}
+                  onChange={(e) => setProductoSearch(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {productosFiltrados.map((p) => (
+                  <button
+                    key={p.productoId}
+                    onClick={() => agregarAlCarrito(p.productoId)}
+                    className="flex flex-col gap-1 rounded-lg border bg-card p-3 text-left hover:bg-accent hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <p className="text-sm font-medium truncate text-foreground">
+                      {p.nombreGenerico}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {p.nombreComercial} — {p.concentracionDescripcion}
+                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-semibold text-primary">
+                        {formatC(p.precioVenta)}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        Stock: {p.stock}
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+                {productosFiltrados.length === 0 && (
+                  <div className="col-span-2 py-8 text-center text-sm text-muted-foreground">
+                    No hay productos disponibles con ese término.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: carrito + resumen */}
+            <div className="w-80 flex flex-col overflow-y-auto">
+              {/* Carrito items */}
+              <div className="flex flex-col gap-2 p-4 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Carrito ({carrito.length})
+                </p>
+                {carrito.length === 0 ? (
+                  <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+                    Seleccione productos del catálogo
+                  </div>
+                ) : (
+                  carrito.map((item) => (
+                    <div
+                      key={item.productoId}
+                      className="rounded-lg border bg-card p-2.5 flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-medium leading-tight flex-1">{item.productoNombre}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-5 shrink-0 text-destructive hover:text-destructive"
+                          onClick={() => quitarDelCarrito(item.productoId)}
+                        >
+                          <Trash2 className="size-3" />
+                          <span className="sr-only">Quitar</span>
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-6"
+                          onClick={() => cambiarCantidad(item.productoId, -1)}
+                        >
+                          <Minus className="size-3" />
+                        </Button>
+                        <span className="text-sm font-medium w-6 text-center">{item.cantidad}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-6"
+                          onClick={() => cambiarCantidad(item.productoId, 1)}
+                        >
+                          <Plus className="size-3" />
+                        </Button>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {formatC(item.precioUnitarioVenta)} c/u
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs whitespace-nowrap">Desc. C$</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={item.subtotalLinea}
+                          step="0.01"
+                          className="h-6 text-xs"
+                          value={item.descuentoLinea}
+                          onChange={(e) =>
+                            cambiarDescuentoLinea(item.productoId, Number(e.target.value))
+                          }
+                        />
+                        <span className="text-xs font-semibold text-primary ml-auto whitespace-nowrap">
+                          {formatC(item.totalLinea)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Sale metadata */}
+              <div className="flex flex-col gap-2 p-4">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Cliente (opcional)</Label>
                   <Input
-                    placeholder="Buscar producto..."
-                    className="pl-9"
-                    value={productoSearch}
-                    onChange={(e) => setProductoSearch(e.target.value)}
+                    className="h-8 text-sm"
+                    placeholder="Nombre del cliente"
+                    value={nombreCliente}
+                    onChange={(e) => setNombreCliente(e.target.value)}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {productosFiltrados.map((p) => (
-                    <button
-                      key={p.productoId}
-                      onClick={() => agregarAlCarrito(p.productoId)}
-                      className="flex flex-col gap-1 rounded-lg border bg-card p-3 text-left hover:bg-accent hover:border-primary/40 transition-colors"
-                    >
-                      <p className="text-sm font-medium truncate text-foreground">{p.nombreGenerico}</p>
-                      <p className="text-xs text-muted-foreground truncate">{p.nombreComercial} — {p.concentracionDescripcion}</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-sm font-semibold text-primary">{formatC(p.precioVenta)}</span>
-                        <Badge variant="outline" className="text-xs">Stock: {p.stock}</Badge>
-                      </div>
-                    </button>
-                  ))}
-                  {productosFiltrados.length === 0 && (
-                    <div className="col-span-2 py-8 text-center text-sm text-muted-foreground">
-                      No hay productos disponibles con ese término.
-                    </div>
-                  )}
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Descuento Global (C$)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="h-8 text-sm"
+                    value={descuentoGlobal}
+                    onChange={(e) => setDescuentoGlobal(Number(e.target.value))}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">
+                    Método de Pago <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={metodoPagoId > 0 ? String(metodoPagoId) : ""}
+                    onValueChange={(v) => {
+                      setMetodoPagoId(Number(v));
+                      setMontoRecibido("");
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {metodosPago.filter((m) => m.estadoActivo).map((m) => (
+                        <SelectItem key={m.metodoPagoId} value={String(m.metodoPagoId)}>
+                          {m.nombreMetodoPago}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Monto recibido — solo efectivo */}
+                {esEfectivo && (
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <Banknote className="size-3.5 text-primary" />
+                      Monto Recibido (C$) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="h-8 text-sm"
+                      placeholder="0.00"
+                      value={montoRecibido}
+                      onChange={(e) => setMontoRecibido(e.target.value)}
+                    />
+                    {montoInsuficiente && (
+                      <p className="text-xs text-destructive">
+                        El monto recibido es insuficiente
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Observaciones</Label>
+                  <Textarea
+                    className="text-sm"
+                    rows={2}
+                    placeholder="Notas opcionales..."
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                  />
                 </div>
               </div>
 
-              {/* Right: carrito + resumen */}
-              <div className="w-80 flex flex-col p-4 gap-4 overflow-y-auto">
-                {/* Carrito items */}
-                <div className="flex flex-col gap-2 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Carrito ({carrito.length})</p>
-                  {carrito.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center py-8 text-sm text-muted-foreground">
-                      Seleccione productos del catálogo
+              {/* Totals */}
+              <div className="p-4 pt-0">
+                <Card className="bg-muted/30">
+                  <CardContent className="py-3 flex flex-col gap-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span>{formatC(subtotal)}</span>
                     </div>
-                  ) : (
-                    carrito.map((item) => (
-                      <div key={item.productoId} className="rounded-lg border bg-card p-2.5 flex flex-col gap-1.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs font-medium leading-tight flex-1">{item.productoNombre}</p>
-                          <Button
-                            variant="ghost" size="icon" className="size-5 shrink-0 text-destructive hover:text-destructive"
-                            onClick={() => quitarDelCarrito(item.productoId)}
-                          >
-                            <Trash2 className="size-3" />
-                            <span className="sr-only">Quitar</span>
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="icon" className="size-6" onClick={() => cambiarCantidad(item.productoId, -1)}>
-                            <Minus className="size-3" />
-                          </Button>
-                          <span className="text-sm font-medium w-6 text-center">{item.cantidad}</span>
-                          <Button variant="outline" size="icon" className="size-6" onClick={() => cambiarCantidad(item.productoId, 1)}>
-                            <Plus className="size-3" />
-                          </Button>
-                          <span className="ml-auto text-xs text-muted-foreground">{formatC(item.precioUnitarioVenta)} c/u</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs whitespace-nowrap">Desc. C$</Label>
-                          <Input
-                            type="number" min={0} max={item.subtotalLinea} step="0.01"
-                            className="h-6 text-xs"
-                            value={item.descuentoLinea}
-                            onChange={(e) => cambiarDescuentoLinea(item.productoId, Number(e.target.value))}
-                          />
-                          <span className="text-xs font-semibold text-primary ml-auto whitespace-nowrap">{formatC(item.totalLinea)}</span>
-                        </div>
+                    {totalDesc > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Descuento:</span>
+                        <span className="text-destructive">-{formatC(totalDesc)}</span>
                       </div>
-                    ))
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Sale metadata */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-col gap-1">
-                    <Label className="text-xs">Cliente (opcional)</Label>
-                    <Input className="h-8 text-sm" placeholder="Nombre del cliente" value={nombreCliente} onChange={(e) => setNombreCliente(e.target.value)} />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label className="text-xs">Descuento Global (C$)</Label>
-                    <Input type="number" min={0} step="0.01" className="h-8 text-sm" value={descuentoGlobal} onChange={(e) => setDescuentoGlobal(Number(e.target.value))} />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label className="text-xs">Método de Pago <span className="text-destructive">*</span></Label>
-                    <Select value={metodoPagoId > 0 ? String(metodoPagoId) : ""} onValueChange={(v) => setMetodoPagoId(Number(v))}>
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {metodosPago.filter(m => m.estadoActivo).map((m) => (
-                          <SelectItem key={m.metodoPagoId} value={String(m.metodoPagoId)}>{m.nombreMetodoPago}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label className="text-xs">Observaciones</Label>
-                    <Textarea className="text-sm" rows={2} placeholder="Notas opcionales..." value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
-                  </div>
-                </div>
-
-                {/* Totals */}
-                <Card className="bg-muted/30 shrink-0">
-                  <CardContent className="py-3 flex flex-col gap-1 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Subtotal:</span><span>{formatC(subtotal)}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Descuento:</span><span className="text-destructive">-{formatC(totalDesc)}</span></div>
-                    <Separator className="my-1" />
-                    <div className="flex justify-between font-bold text-base"><span>Total:</span><span className="text-primary">{formatC(total)}</span></div>
+                    )}
+                    <Separator className="my-0.5" />
+                    <div className="flex justify-between font-bold text-base">
+                      <span>Total a pagar:</span>
+                      <span className="text-primary">{formatC(total)}</span>
+                    </div>
+                    {/* Cambio — solo efectivo */}
+                    {esEfectivo && montoRecibidoNum > 0 && !montoInsuficiente && (
+                      <>
+                        <Separator className="my-0.5" />
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-muted-foreground">Monto recibido:</span>
+                          <span>{formatC(montoRecibidoNum)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-success">
+                          <span>Cambio:</span>
+                          <span>{formatC(cambio)}</span>
+                        </div>
+                      </>
+                    )}
+                    {esEfectivo && montoInsuficiente && montoRecibidoNum > 0 && (
+                      <Alert variant="destructive" className="py-2 px-3 mt-1">
+                        <AlertDescription className="text-xs">
+                          Faltan {formatC(total - montoRecibidoNum)} para completar el pago
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </CardContent>
                 </Card>
 
                 <Button
-                  className="w-full"
-                  disabled={carrito.length === 0 || !metodoPagoId}
+                  className="w-full mt-3"
+                  disabled={
+                    carrito.length === 0 ||
+                    !metodoPagoId ||
+                    (esEfectivo && montoInsuficiente)
+                  }
                   onClick={confirmarVenta}
                 >
-                  <Receipt data-icon="inline-start" />
+                  <Receipt className="size-4" />
                   Confirmar Venta
                 </Button>
               </div>
