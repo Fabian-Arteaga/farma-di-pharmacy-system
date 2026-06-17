@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard, ShoppingCart, Receipt, Package, BarChart3,
   BookOpen, Cross, LogOut, ChevronRight, AlertTriangle,
@@ -38,6 +39,7 @@ export function AppSidebar() {
 
   const alertas = inventario.filter((i) => i.estado !== "normal").length;
   const visibleCatalogos = catalogosItems.filter((i) => !i.adminOnly || isAdmin);
+  const [catalogosOpen, setCatalogosOpen] = useState(() => pathname.startsWith("/catalogos"));
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -151,7 +153,7 @@ export function AppSidebar() {
 
             {/* Catálogos — collapsible, admin only */}
             {visibleCatalogos.length > 0 && (
-              <Collapsible defaultOpen={pathname.startsWith("/catalogos")}>
+              <Collapsible open={catalogosOpen} onOpenChange={setCatalogosOpen}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger
                     render={
