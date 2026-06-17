@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { AuthUser } from "./types";
 
 type AuthContextType = {
@@ -11,6 +11,8 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const SESSION_KEY = "farmadi_session";
 
 // Credenciales de demostración
 const DEMO_USERS: Record<string, AuthUser> = {
@@ -41,17 +43,37 @@ const DEMO_PASSWORDS: Record<string, string> = {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SESSION_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as AuthUser;
+        setUser(parsed);
+      }
+    } catch {
+      // ignore parse errors
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const login = useCallback(
     async (username: string, password: string): Promise<{ success: boolean; message?: string }> => {
       setIsLoading(true);
       // Simula latencia de red
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 600));
       const foundUser = DEMO_USERS[username.toLowerCase()];
       const correctPassword = DEMO_PASSWORDS[username.toLowerCase()];
       if (foundUser && correctPassword === password) {
         setUser(foundUser);
+        try {
+          localStorage.setItem(SESSION_KEY, JSON.stringify(foundUser));
+        } catch {
+          // ignore storage errors
+        }
         setIsLoading(false);
         return { success: true };
       }
@@ -63,6 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch {
+      // ignore
+    }
   }, []);
 
   return (

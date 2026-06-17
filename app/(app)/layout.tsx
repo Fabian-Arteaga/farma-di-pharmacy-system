@@ -18,7 +18,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, router]);
 
-  if (!user) {
+  // While restoring session from localStorage, show a neutral loader
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -27,6 +28,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // useEffect will redirect to /login
   }
 
   return (

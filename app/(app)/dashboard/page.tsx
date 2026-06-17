@@ -90,7 +90,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(value: number) => [`C$ ${value.toLocaleString()}`, ""]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-card)" }} />
+                <Tooltip formatter={(value) => [`C$ ${Number(value ?? 0).toLocaleString()}`, ""]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-card)" }} />
                 <Bar dataKey="ventas" name="Ventas" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="compras" name="Compras" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -113,7 +113,7 @@ export default function DashboardPage() {
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => `C$ ${v.toLocaleString()}`} contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-card)" }} />
+                <Tooltip formatter={(v) => `C$ ${Number(v ?? 0).toLocaleString()}`} contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-card)" }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
               </PieChart>
             </ResponsiveContainer>

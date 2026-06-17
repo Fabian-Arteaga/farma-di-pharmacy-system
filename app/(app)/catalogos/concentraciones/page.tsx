@@ -67,7 +67,7 @@ export default function ConcentracionesPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Unidad <span className="text-destructive">*</span></Label>
-                <Select value={watch("unidadConcentracion")} onValueChange={(v) => setValue("unidadConcentracion", v)}>
+                <Select value={watch("unidadConcentracion")} onValueChange={(v) => setValue("unidadConcentracion", v ?? "mg")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                 </Select>

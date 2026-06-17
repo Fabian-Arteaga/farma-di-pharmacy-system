@@ -105,7 +105,7 @@ export default function UsuariosPage() {
               </div>
               <div className="col-span-2 flex flex-col gap-1.5">
                 <Label>Rol <span className="text-destructive">*</span></Label>
-                <Select value={watch("rol")} onValueChange={(v) => setValue("rol", v)}>
+                <Select value={watch("rol")} onValueChange={(v) => setValue("rol", v ?? "")}>
                   <SelectTrigger aria-invalid={!!errors.rol}><SelectValue placeholder="Seleccionar rol..." /></SelectTrigger>
                   <SelectContent>{roles.filter(r => r.estadoActivo).map(r => <SelectItem key={r.rolId} value={r.nombreRol}>{r.nombreRol}</SelectItem>)}</SelectContent>
                 </Select>
