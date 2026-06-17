@@ -71,10 +71,7 @@ export default function UsuariosPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-0.5">
-        <h2 className="text-xl font-bold text-foreground">Usuarios</h2>
-        <p className="text-sm text-muted-foreground">Gestión de cuentas de acceso al sistema</p>
-      </div>
+      <div className="mb-5"><h2 className="text-xl font-bold">Usuarios</h2><p className="text-sm text-muted-foreground">Gestión de cuentas de acceso al sistema</p></div>
       <CatalogTable title="Usuarios" addLabel="Agregar usuario" data={usuarios} columns={columns} idKey="usuarioId" onAdd={openAdd} onEdit={openEdit} searchKeys={["nombre", "apellido", "correoElectronico", "nombreUsuario"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">

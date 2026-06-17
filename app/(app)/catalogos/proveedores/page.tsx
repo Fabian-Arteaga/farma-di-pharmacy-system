@@ -54,10 +54,7 @@ export default function ProveedoresPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-0.5">
-        <h2 className="text-xl font-bold text-foreground">Proveedores</h2>
-        <p className="text-sm text-muted-foreground">Empresas distribuidoras y proveedoras de medicamentos</p>
-      </div>
+      <div className="mb-5"><h2 className="text-xl font-bold">Proveedores</h2><p className="text-sm text-muted-foreground">Empresas distribuidoras y proveedoras de medicamentos</p></div>
       <CatalogTable title="Proveedores" addLabel="Agregar proveedor" data={proveedores} columns={columns} idKey="proveedorId" onAdd={openAdd} onEdit={openEdit} searchKeys={["nombreProveedor", "correoElectronico"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">

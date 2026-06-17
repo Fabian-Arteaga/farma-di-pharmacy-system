@@ -53,10 +53,7 @@ export default function ConcentracionesPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-0.5">
-        <h2 className="text-xl font-bold text-foreground">Concentraciones</h2>
-        <p className="text-sm text-muted-foreground">Valores y unidades de concentración de medicamentos</p>
-      </div>
+      <div className="mb-5"><h2 className="text-xl font-bold">Concentraciones</h2><p className="text-sm text-muted-foreground">Valores y unidades de concentración de medicamentos</p></div>
       <CatalogTable title="Concentraciones" addLabel="Agregar concentración" data={concentraciones} columns={columns} idKey="concentracionId" onAdd={openAdd} onEdit={openEdit} searchKeys={["valorConcentracion", "unidadConcentracion"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

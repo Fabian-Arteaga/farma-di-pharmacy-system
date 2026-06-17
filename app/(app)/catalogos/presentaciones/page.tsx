@@ -49,10 +49,7 @@ export default function PresentacionesPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-0.5">
-        <h2 className="text-xl font-bold text-foreground">Presentaciones</h2>
-        <p className="text-sm text-muted-foreground">Formas farmacéuticas de los medicamentos</p>
-      </div>
+      <div className="mb-5"><h2 className="text-xl font-bold">Presentaciones</h2><p className="text-sm text-muted-foreground">Formas farmacéuticas de los medicamentos</p></div>
       <CatalogTable title="Presentaciones" addLabel="Agregar presentación" data={presentaciones} columns={columns} idKey="presentacionId" onAdd={openAdd} onEdit={openEdit} searchKeys={["nombrePresentacion"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

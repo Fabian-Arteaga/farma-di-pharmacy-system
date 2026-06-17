@@ -58,10 +58,7 @@ export default function CategoriasPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-0.5">
-        <h2 className="text-xl font-bold text-foreground">Categorías</h2>
-        <p className="text-sm text-muted-foreground">Gestión de categorías de medicamentos</p>
-      </div>
+      <div className="mb-5"><h2 className="text-xl font-bold">Categorías</h2><p className="text-sm text-muted-foreground">Gestión de categorías de medicamentos</p></div>
       <CatalogTable title="Categorías" addLabel="Agregar categoría" data={categorias} columns={columns} idKey="categoriaId" onAdd={openAdd} onEdit={openEdit} onDelete={deleteCategoria} searchKeys={["nombreCategoria"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

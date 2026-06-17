@@ -49,10 +49,7 @@ export default function MetodosPagoPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-0.5">
-        <h2 className="text-xl font-bold text-foreground">Métodos de Pago</h2>
-        <p className="text-sm text-muted-foreground">Formas de pago disponibles para transacciones</p>
-      </div>
+      <div className="mb-5"><h2 className="text-xl font-bold">Métodos de Pago</h2><p className="text-sm text-muted-foreground">Formas de pago disponibles para transacciones</p></div>
       <CatalogTable title="Métodos de Pago" addLabel="Agregar método de pago" data={metodosPago} columns={columns} idKey="metodoPagoId" onAdd={openAdd} onEdit={openEdit} searchKeys={["nombreMetodoPago"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

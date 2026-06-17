@@ -178,14 +178,7 @@ export function CatalogTable<T extends { [k: string]: unknown }>({
 // Badge for estado activo
 export function EstadoBadge({ activo }: { activo: boolean }) {
   return (
-    <Badge
-      variant="outline"
-      className={
-        activo
-          ? "text-chart-2 border-chart-2/40 bg-chart-2/10 font-medium"
-          : "text-muted-foreground border-border bg-muted/40 font-medium"
-      }
-    >
+    <Badge variant={activo ? "secondary" : "outline"} className={activo ? "text-chart-2 border-chart-2/40 bg-chart-2/10" : "text-muted-foreground"}>
       {activo ? "Activo" : "Inactivo"}
     </Badge>
   );
