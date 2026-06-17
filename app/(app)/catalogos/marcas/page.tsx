@@ -67,8 +67,8 @@ export default function MarcasPage() {
 
   return (
     <>
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">Marcas</h2>
+      <div className="mb-5 flex flex-col gap-0.5">
+        <h2 className="text-xl font-bold text-foreground">Marcas</h2>
         <p className="text-sm text-muted-foreground">Gestión de marcas de productos farmacéuticos</p>
       </div>
 

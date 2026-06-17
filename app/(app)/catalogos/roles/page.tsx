@@ -49,7 +49,10 @@ export default function RolesPage() {
 
   return (
     <>
-      <div className="mb-5"><h2 className="text-xl font-bold">Roles</h2><p className="text-sm text-muted-foreground">Perfiles de acceso del sistema</p></div>
+      <div className="mb-5 flex flex-col gap-0.5">
+        <h2 className="text-xl font-bold text-foreground">Roles</h2>
+        <p className="text-sm text-muted-foreground">Perfiles de acceso del sistema</p>
+      </div>
       <CatalogTable title="Roles" addLabel="Agregar rol" data={roles} columns={columns} idKey="rolId" onAdd={openAdd} onEdit={openEdit} searchKeys={["nombreRol"]} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

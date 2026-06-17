@@ -115,8 +115,8 @@ export default function ReportesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-bold">Reportes y Análisis</h2>
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-xl font-bold text-foreground">Reportes y Análisis</h2>
         <p className="text-sm text-muted-foreground">Información analítica para la toma de decisiones gerenciales</p>
       </div>
 
